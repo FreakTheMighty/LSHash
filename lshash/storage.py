@@ -88,18 +88,22 @@ class RedisStorage(BaseStorage):
             raise ImportError("redis-py is required to use Redis as storage.")
         self.name = 'redis'
         self.storage = redis.StrictRedis(**config)
+        self.prefix = 'lshash' or config.prefix
 
+    def get_prefixed(self, val):
+        return ':'.join([self.prefix, val])
+        
     def keys(self, pattern="*"):
-        return self.storage.keys(pattern)
+        return self.storage.keys(self.get_prefixed(pattern))
 
     def set_val(self, key, val):
-        self.storage.set(key, val)
+        self.storage.set(self.get_prefixed(key), val)
 
     def get_val(self, key):
-        return self.storage.get(key)
+        return self.storage.get(self.get_prefixed(key))
 
     def append_val(self, key, val):
-        self.storage.rpush(key, json.dumps(val))
+        self.storage.rpush(self.get_prefixed(key), json.dumps(val))
 
     def get_list(self, key):
-        return self.storage.lrange(key, 0, -1)
+        return self.storage.lrange(self.get_prefixed(key), 0, -1)
